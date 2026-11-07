@@ -1,0 +1,22 @@
+{
+  "name": "figma-to-manifest",
+  "version": "0.1.0",
+  "description": "Transform raw Figma export (from air-ds-manifest-exporter) into a manifest.json for AI code generation.",
+  "type": "module",
+  "bin": {
+    "figma-to-manifest": "./bin/figma-to-manifest.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  },
+  "license": "UNLICENSED",
+  "private": false
+}
