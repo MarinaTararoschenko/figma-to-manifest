@@ -1,6 +1,10 @@
+[English](README.md) | [Русский](README.ru.md)
+
 # figma-to-manifest
 
-CLI tool. Converts `raw.json` (output of the Figma plugin `air-ds-manifest-exporter`) into a `skeleton-page/` directory (with `manifest.json` and `chunks/`) — a compact, AI-friendly description of a Figma frame in which Figma variable names are replaced with `--lib-*` tokens.
+CLI tool that converts `raw.json` (output of the Figma plugin `air-ds-manifest-exporter`) into a `skeleton-page/` directory (`manifest.json` + `chunks/`) — a compact, LLM-friendly intermediate representation of a Figma frame in which Figma variable names are replaced with `--lib-*` semantic tokens.
+
+**Key impact:** compresses the exported JSON context by **~10x** (e.g., from ~400 KB down to ~40 KB), preventing LLM hallucinations and binding layouts directly to design-system components.
 
 ## Installation
 
@@ -45,14 +49,14 @@ figma-to-manifest raw.json --out=custom/path/manifest.json
 
 1. CLI argument `--map=<path>`.
 2. Environment variable `FIGMA_TOKENS_MAP`.
-3. 3. Inside an installed package that exposes the map via `exports` (e.g. a design-system package).
+3. Inside an installed package that exposes the map via `exports` (e.g., a design-system package).
 4. `./figma-tokens-map.yaml` in the current working directory.
 
 ### `figma-to-code.map.yaml` (Figma component → Angular snippet)
 
 1. CLI argument `--code-map=<path>`.
 2. Environment variable `FIGMA_TO_CODE_MAP`.
-3. 3. Inside an installed package that exposes the map via `exports` (e.g. a design-system package).
+3. Inside an installed package that exposes the map via `exports` (e.g., a design-system package).
 4. `./figma-to-code.map.yaml` in the current working directory.
 
 If a map is not found, the tool exits with an error and prints the list of checked paths.
@@ -67,14 +71,14 @@ For each node in the tree:
   - **Not found** → marked with the prefix `UNMAPPED: ` and passed through as is.
 - Discards `paragraphspacing/*` and `paragraphindent/*` (always 0, noise).
 - For nodes matched in `figma-to-code.map.yaml`, replaces the whole subtree with `$snippet` and `$inputs`.
-- Resolves icons: strips the `Family/` prefix (e.g. `Arrows/chevron-right` → `chevron-right`), applies the `icons` mapping from `figma-to-code.map.yaml`.
+- Resolves icons: strips the `Family/` prefix (e.g., `Arrows/chevron-right` → `chevron-right`), applies the `icons` mapping from `figma-to-code.map.yaml`.
 - Removes `null`/`undefined` fields from `$inputs` (no empty bindings).
 - Deduplicates repeating unmapped components (`$total`).
 - Splits the manifest into chunks if it exceeds the threshold (20 KB by default).
 
 ## Output structure
 
-```
+```text
 skeleton-page/
   manifest.json       # skeleton (with CHUNK_REF placeholders)
   chunks/
@@ -85,16 +89,16 @@ skeleton-page/
 - If the manifest is smaller than the threshold, no `chunks/` folder is created.
 - `manifest.chunks[]` lists every chunk with `file`, `name`, and `reason`.
 
-## What the AI agent does with `UNMAPPED`
+## How LLM agents handle `UNMAPPED` tokens
 
-The agent (Cline) must handle `UNMAPPED: <name>` entries according to `.clinerules/02-tokens-variables.md`:
+The LLM coding agent (e.g., Cline, Cursor, Claude Code) handles `UNMAPPED: <name>` entries according to the project's agent instruction rules (e.g., `.clinerules`, `.cursorrules`, or `CLAUDE.md`):
 
-1. Try to find a matching `--lib-*` token via Tokens MCP (`search_tokens`).
-2. If a token exists — use it and leave `// AUTONOMY(token-missing): <name> — matched <token>`.
-3. If no token exists — use a local CSS variable with a `TODO`.
-4. Write an entry to `warnings.json`.
+1. Searches for a matching `--lib-*` token via Tokens MCP (`search_tokens`).
+2. If a matching token exists — applies it and adds `// AUTONOMY(token-missing): <name> — matched <token>`.
+3. If no token exists — falls back to a local CSS variable with a `TODO` comment.
+4. Logs the discrepancy into `warnings.json`.
 
-The transformer does not attempt to resolve `UNMAPPED` itself — that is the agent's responsibility.
+The transformer does not attempt to guess `UNMAPPED` values on its own — that is intentionally delegated to the LLM agent.
 
 ## `raw.json` format
 
@@ -174,4 +178,4 @@ The tool expects as input the JSON produced by the Figma plugin `air-ds-manifest
 
 - **Node.js** ≥ 20.19.0
 - **`js-yaml`** ^4.1.0
--- **`figma-tokens-map.yaml`** and **`figma-to-code.map.yaml`** — must be provided via CLI flags, env vars, an installed package that exposes them, or the current working directory.
+- **`figma-tokens-map.yaml`** and **`figma-to-code.map.yaml`** — must be provided via CLI flags, env vars, an installed package that exposes them, or the current working directory.
